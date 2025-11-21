@@ -1,52 +1,23 @@
-// ==============================
-// Zerolock Service Worker
-// Optimized & Original Version
-// ==============================
-
-const ZL_VERSION = "zerolock-v1";
-const ZL_ASSETS = [
-  "./",
-  "./index.html",
-  "./style.css",
-  "./script.js",
-  "./manifest.json",
-  "./assets/favicon.jpg",
+const CACHE_NAME = 'zerotrace-v1';
+const ASSETS = [
+  './index.html',
+  './styles.css',
+  './assets/favicon.jpg'
 ];
 
-// Install: Cache core assets
-self.addEventListener("install", (event) => {
-  event.waitUntil(
-    caches.open(ZL_VERSION).then((cache) => {
-      return cache.addAll(ZL_ASSETS);
-    })
-  );
-  self.skipWaiting();
+self.addEventListener('install', (event) => {
+  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
 });
 
-// Activate: Remove old caches
-self.addEventListener("activate", (event) => {
+self.addEventListener('activate', (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => {
-      return Promise.all(
-        keys
-          .filter((key) => key !== ZL_VERSION)
-          .map((oldKey) => caches.delete(oldKey))
-      );
-    })
+    caches.keys().then((keys) => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
   );
-  self.clients.claim();
 });
 
-// Fetch: Network first → fallback to cache
-self.addEventListener("fetch", (event) => {
+self.addEventListener('fetch', (event) => {
   event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        // Save fresh copy to cache
-        const clone = response.clone();
-        caches.open(ZL_VERSION).then((cache) => cache.put(event.request, clone));
-        return response;
-      })
-      .catch(() => caches.match(event.request)) // offline fallback
+    caches.match(event.request).then((res) => res || fetch(event.request))
   );
 });
+
