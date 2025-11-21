@@ -1,23 +1,44 @@
-const CACHE_NAME = 'zerotrace-v1';
-const ASSETS = [
-  './index.html',
-  './styles.css',
-  './assets/favicon.jpg'
+const ZL_VERSION = "zerolock-v1";
+const ZL_ASSETS = [
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./as.js",
+  "./manifest.webmanifest",
+  "./assets/f.jpg",
 ];
 
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS)));
-});
-
-self.addEventListener('activate', (event) => {
+self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.keys().then((keys) => Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k))))
+    caches.open(ZL_VERSION).then((cache) => {
+      return cache.addAll(ZL_ASSETS);
+    })
   );
+  self.skipWaiting();
 });
 
-self.addEventListener('fetch', (event) => {
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) => {
+      return Promise.all(
+        keys
+          .filter((key) => key !== ZL_VERSION)
+          .map((oldKey) => caches.delete(oldKey))
+      );
+    })
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
   event.respondWith(
-    caches.match(event.request).then((res) => res || fetch(event.request))
+    fetch(event.request)
+      .then((response) => {
+
+        const clone = response.clone();
+        caches.open(ZL_VERSION).then((cache) => cache.put(event.request, clone));
+        return response;
+      })
+      .catch(() => caches.match(event.request))
   );
 });
-
